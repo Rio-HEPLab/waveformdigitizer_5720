@@ -21,7 +21,7 @@ def main():
 
     print(df)
     plt.plot(range(0, df['Vals'][0].size),df['Vals'][0])
-    plt.savefig('analisedWave0.png')
+    plt.show()
 
 def integrate(event):
     return np.sum(event)
