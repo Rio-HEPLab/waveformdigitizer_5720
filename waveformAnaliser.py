@@ -4,30 +4,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+import ipdb
 
 def main():
     df = pd.read_hdf('output.h5','df')
-    #events = df['Vals']
 
     invert = True
     xmin=450
     xmax=550
     conv = 1.0
- 
+
     signals = []
 
     df['Baseline'] = 0
     df['Integral'] = 0
     df['Mean'] = 0
     df['Max'] = 0
-    #for i, event in enumerate(events):
     for i in range( df.shape[0] ):
-    #for i in range( 10 ):
         event = df.loc[i,'Vals']
 
-        #df['Itg'] = integrate(event)
         baseline = GetBaseLine(event, 200)
-        #df['Bsl'] = baseline
         event -= baseline
         if invert: event *= -1
 
@@ -35,28 +31,25 @@ def main():
         df.loc[i,'Integral'] = integrate(event,xmin,xmax,conv)
         df.loc[i,'Mean']  = mean(event,xmin,xmax,conv)
         df.loc[i,'Max']  = GetMax(event)
-        #df.loc[i,'Vals'] = event
 
-    print(df)
+    #print(df)
 
     event = df.loc[0,'Vals']
+    xmin, xmax = findPulseWidth(event, 1/3)
     xdata = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
     event_r = event[xmin:xmax]
-    popt, pcov = curve_fit(Gaus, xdata, event_r, p0=(1000.,500.,50.))   
+    popt, pcov = curve_fit(Gaus, xdata, event_r, p0=(1000.,500.,50.))
     print (popt)
     print (pcov)
 
-    #baseline = df.loc[0,'Baseline']
-    popt_WithC, pcov_WithC = curve_fit(GausWithConstant, xdata, event_r, p0=(popt[0],popt[1],popt[2],0.))   
+    popt_WithC, pcov_WithC = curve_fit(GausWithConstant, xdata, event_r, p0=(popt[0],popt[1],popt[2],0.))
     print (popt_WithC)
     print (pcov_WithC)
 
-    fig, axes = plt.subplots(2,2) 
-    #for i in (0,100,200,300):
+    fig, axes = plt.subplots(2,2)
     for i in range(5):
         axes[0,0].plot( range(0, df.loc[i,'Vals'].size),df.loc[i,'Vals'] )
 
-    #axes[1].hist( df['Itg'], bins=50 )
     axes[0,1].hist( df['Mean'], bins=50 )
 
     axes[1,0].plot( xdata, event_r, 'ko' )
@@ -65,6 +58,40 @@ def main():
     axes[1,0].plot( x_plot, GausWithConstant( x_plot, A=popt_WithC[0], mean=popt_WithC[1], sigma=popt_WithC[2], C=popt_WithC[3] ), 'b' )
 
     plt.show()
+
+def findPulseWidth(event, threshold):
+    if (threshold > 1):
+        return 0
+
+    center = int(np.argmax(event))
+    thresholdvalue = threshold * np.max(event)
+    enumerateEvent = list(zip(range(event[1:center].size), event[1:center]))
+    firstThreshold = bisearchLeft( enumerateEvent, thresholdvalue)
+    enumerateEvent = list(zip(range(event[center : event.size].size), event[center : event.size]))
+    secondThreshold = bisearchRight(enumerateEvent, thresholdvalue) + center
+
+    return (firstThreshold - 10, secondThreshold + 10)
+    ipdb.set_trace()
+
+def bisearchLeft(array, value):
+    x = int(len(array) / 2)
+
+    if array[x][1] > value and array[x - 1][1] < value:
+        return array[x][0]
+    elif array[x][1] > value :
+        return bisearchLeft(array[0 : x], value)
+    elif array[x][1] < value :
+        return bisearchLeft(array[x : len(array)], value)
+
+def bisearchRight(array, value):
+    x = int(len(array) / 2)
+
+    if array[x][1] < value and array[x - 1][1] > value:
+        return array[x][0]
+    elif array[x][1] > value :
+        return bisearchRight(array[x : len(array)], value)
+    elif array[x][1] < value :
+        return bisearchRight(array[0 : x], value)
 
 def integrate(event, xmin, xmax, conv=1.0):
     #x = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
@@ -76,19 +103,13 @@ def mean(event, xmin, xmax, conv=1.0):
     x = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
     event_r = event[xmin:xmax]
     mean = np.sum( event_r * x ) / np.sum( event_r )
-    #print( x )
-    #print( event_r )
-    #print( np.sum( event_r ), np.sum( event_r * x ), event_r * x )
     return mean
 
-#def Gaus(x, A, mean, sigma, C):
 def Gaus(x, A, mean, sigma):
-   #return A * np.exp( -0.5*( (x - mean)/sigma )**2 ) + C
    return A * np.exp( -0.5*( (x - mean)/sigma )**2 )
 
 def GausWithConstant(x, A, mean, sigma, C):
    return A * np.exp( -0.5*( (x - mean)/sigma )**2 ) + C
-
 
 def GetBaseLine(event, _range):
     baseline = 0
@@ -103,4 +124,3 @@ def GetMax(event):
 
 if __name__ == '__main__':
     main()
-
