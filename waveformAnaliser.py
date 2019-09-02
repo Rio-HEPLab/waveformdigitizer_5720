@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import ipdb
 
+XMIN = 450
+XMAX = 550
+
 def main():
     df = pd.read_hdf('output.h5','df')
 
@@ -13,6 +16,8 @@ def main():
     xmin=450
     xmax=550
     conv = 1.0
+
+    ipdb.set_trace()
 
     signals = []
 
@@ -27,12 +32,12 @@ def main():
         event -= baseline
         if invert: event *= -1
 
+        xmin, xmax = findPulseWidth(event, 1/3)
+
         df.loc[i,'Baseline'] = baseline
         df.loc[i,'Integral'] = integrate(event,xmin,xmax,conv)
         df.loc[i,'Mean']  = mean(event,xmin,xmax,conv)
         df.loc[i,'Max']  = GetMax(event)
-
-    #print(df)
 
     event = df.loc[0,'Vals']
     xmin, xmax = findPulseWidth(event, 1/3)
@@ -67,11 +72,15 @@ def findPulseWidth(event, threshold):
     thresholdvalue = threshold * np.max(event)
     enumerateEvent = list(zip(range(event[1:center].size), event[1:center]))
     firstThreshold = bisearchLeft( enumerateEvent, thresholdvalue)
+    if firstThreshold == None:
+        firstThreshold = XMIN
+
     enumerateEvent = list(zip(range(event[center : event.size].size), event[center : event.size]))
     secondThreshold = bisearchRight(enumerateEvent, thresholdvalue) + center
+    if secondThreshold == None:
+        secondThreshold = XMAX
 
     return (firstThreshold - 10, secondThreshold + 10)
-    ipdb.set_trace()
 
 def bisearchLeft(array, value):
     x = int(len(array) / 2)
