@@ -43,13 +43,13 @@ def main():
     xmin, xmax = findPulseWidth(event, 1/3)
     xdata = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
     event_r = event[xmin:xmax]
-    popt, pcov = curve_fit(Gaus, xdata, event_r, p0=(1000.,500.,50.))
+    popt, pcov = curve_fit(Crystalball, xdata, event_r, p0=(1000, 100, 50, np.argmax(event), 150))
     print (popt)
     print (pcov)
 
-    popt_WithC, pcov_WithC = curve_fit(GausWithConstant, xdata, event_r, p0=(popt[0],popt[1],popt[2],0.))
-    print (popt_WithC)
-    print (pcov_WithC)
+    #popt_WithC, pcov_WithC = curve_fit(GausWithConstant, xdata, event_r, p0=(popt[0],popt[1],popt[2],0.))
+    #print (popt_WithC)
+    #print (pcov_WithC)
 
     fig, axes = plt.subplots(2,2)
     for i in range(5):
@@ -60,7 +60,7 @@ def main():
     axes[1,0].plot( xdata, event_r, 'ko' )
     x_plot = np.linspace(xmin,xmax,200)
     axes[1,0].plot( x_plot, Gaus( x_plot, A=popt[0], mean=popt[1], sigma=popt[2] ), 'r' )
-    axes[1,0].plot( x_plot, GausWithConstant( x_plot, A=popt_WithC[0], mean=popt_WithC[1], sigma=popt_WithC[2], C=popt_WithC[3] ), 'b' )
+    #axes[1,0].plot( x_plot, GausWithConstant( x_plot, A=popt_WithC[0], mean=popt_WithC[1], sigma=popt_WithC[2], C=popt_WithC[3] ), 'b' )
 
     plt.show()
 
@@ -119,6 +119,15 @@ def Gaus(x, A, mean, sigma):
 
 def GausWithConstant(x, A, mean, sigma, C):
    return A * np.exp( -0.5*( (x - mean)/sigma )**2 ) + C
+
+def Crystalball(x, N, alpha, n, x0, sigma):
+
+    A = ((n / np.abs(alpha))**n) * np.exp(-(np.abs(alpha)**2)/2)
+    B = (n/np.abs(alpha)) - np.abs(alpha)
+
+    np.where(x < alpha, N * np.exp((-(x -x0)**2) / (2*(sigma**2))), A * ((B - ((x-x0)/sigma))**(-n)))
+
+    return x
 
 def GetBaseLine(event, _range):
     baseline = 0
