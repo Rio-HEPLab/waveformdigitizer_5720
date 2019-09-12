@@ -66,7 +66,9 @@ def main():
 
     #df.to_csv('output.csv')
     #df.to_hdf('output.h5', key='df', mode='w')
-    df.to_hdf('output-wave1-SingleTrig-V2-40k.h5', key='df', mode='w')
+    #df.to_hdf('output-wave1-SingleTrig-V2-40k.h5', key='df', mode='w')
+    nameFile = file.split('.')
+    df.to_hdf('output-'+nameFile[0]+'.h5', key='df', mode='w')
 
 if __name__== '__main__':
     main()
