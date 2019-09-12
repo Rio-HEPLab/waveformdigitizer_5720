@@ -1,12 +1,27 @@
 #!/bin/env python 
 
+import sys
 import re
 import numpy as np
 import pandas as pd
 
-if __name__ == '__main__':
+def main():
+    
+    file = "wave0.txt"
+    maxEvents = 40000
 
-    waves = open("wave0.txt", "r") 
+    for arg in sys.argv[1:]:
+        if isinstance(arg, str):
+            print("Reading File " + arg)
+            file = arg
+        if isinstance(arg, int):
+            print("Number of events " + arg)
+            maxEvents = arg
+
+    #waves = open("wave0.txt", "r") 
+    #waves = open("wave1-SingleTrig.txt", "r") 
+    #waves = open("wave1-DoubleTrig.txt", "r") 
+    waves = open("../" + file, "r") 
     record_length = -1
     event_number = -1
     offset = -1
@@ -18,7 +33,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(columns=['Rec','Evt','DAC','Vals'])
 
     for idx, line in enumerate(waves): 
-        if df.shape[0] >= 1000: break 
+        if maxEvents >= 0 and df.shape[0] >= maxEvents: break 
 	 
         m_record_length = p_record_length.match( line ) 
         m_event_number = p_event_number.match( line ) 
@@ -50,5 +65,8 @@ if __name__ == '__main__':
                     df = df.append({'Rec' : record_length, 'Evt' : event_number, 'DAC' : offset, 'Vals': arr}, ignore_index=True) 
 
     #df.to_csv('output.csv')
-    df.to_hdf('output.h5', key='df', mode='w')
+    #df.to_hdf('output.h5', key='df', mode='w')
+    df.to_hdf('output-wave1-SingleTrig-V2-40k.h5', key='df', mode='w')
 
+if __name__== '__main__':
+    main()
