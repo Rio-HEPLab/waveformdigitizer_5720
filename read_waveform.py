@@ -7,21 +7,30 @@ import pandas as pd
 
 def main():
     
-    file = "wave0.txt"
-    maxEvents = 40000
+    filename = "wave0.txt"
+    maxEvents = 10000
 
-    for arg in sys.argv[1:]:
-        if isinstance(arg, str):
-            print("Reading File " + arg)
-            file = arg
-        if isinstance(arg, int):
-            print("Number of events " + arg)
-            maxEvents = arg
+    #for arg in sys.argv[1:]:
+    #    if isinstance(arg, str):
+    #        print("Reading File " + arg)
+    #        filename = arg
+    #    if isinstance(arg, int):
+    #        print("Number of events " + arg)
+    #        maxEvents = arg
+
+    args = sys.argv[1:]
+    if len(args) >= 1:
+        filename = args[0]     
+    if len(args) >= 2:
+        maxEvents = int(args[1])
+
+    print("Number of events {:d}".format(maxEvents))
+    print("Reading File " + filename)
 
     #waves = open("wave0.txt", "r") 
     #waves = open("wave1-SingleTrig.txt", "r") 
     #waves = open("wave1-DoubleTrig.txt", "r") 
-    waves = open("../" + file, "r") 
+    waves = open(filename, "r") 
     record_length = -1
     event_number = -1
     offset = -1
@@ -67,8 +76,8 @@ def main():
     #df.to_csv('output.csv')
     #df.to_hdf('output.h5', key='df', mode='w')
     #df.to_hdf('output-wave1-SingleTrig-V2-40k.h5', key='df', mode='w')
-    nameFile = file.split('.')
-    df.to_hdf('output-'+nameFile[0]+'.h5', key='df', mode='w')
+    file_str = ( filename.split('/')[-1] ).split('.')[0]
+    df.to_hdf('output-' + file_str + '.h5', key='df', mode='w')
 
 if __name__== '__main__':
     main()

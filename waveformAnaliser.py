@@ -10,14 +10,16 @@ XMIN = 450
 XMAX = 550
 
 def main():
-    df = pd.read_hdf('output.h5','df')
+    #df = pd.read_hdf('output.h5','df')
+    df = pd.read_hdf('output-wave1-SingleTrig-V2-10k.h5','df')
+    #df = pd.read_hdf('output-wave1-DoubleTrig.h5','df')
 
     invert = True
-    xmin=450
-    xmax=550
+    xmin=400
+    xmax=600
     conv = 1.0
 
-    ipdb.set_trace()
+    #ipdb.set_trace()
 
     signals = []
 
@@ -32,7 +34,7 @@ def main():
         event -= baseline
         if invert: event *= -1
 
-        xmin, xmax = findPulseWidth(event, 1/3)
+        #xmin, xmax = findPulseWidth(event, 1/3)
 
         df.loc[i,'Baseline'] = baseline
         df.loc[i,'Integral'] = integrate(event,xmin,xmax,conv)
@@ -61,6 +63,8 @@ def main():
     x_plot = np.linspace(xmin,xmax,200)
     axes[1,0].plot( x_plot, Gaus( x_plot, A=popt[0], mean=popt[1], sigma=popt[2] ), 'r' )
     axes[1,0].plot( x_plot, GausWithConstant( x_plot, A=popt_WithC[0], mean=popt_WithC[1], sigma=popt_WithC[2], C=popt_WithC[3] ), 'b' )
+
+    axes[1,1].hist( df['Integral'], bins=200, range=(0,10000) )
 
     plt.show()
 
