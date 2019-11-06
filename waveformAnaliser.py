@@ -10,8 +10,8 @@ XMIN = 450
 XMAX = 550
 
 def main():
-    #df = pd.read_hdf('output.h5','df')
-    df = pd.read_hdf('output-wave1-SingleTrig-V2-10k.h5','df')
+    df = pd.read_hdf('output.h5','df')
+    #df = pd.read_hdf('output-wave1-SingleTrig-V2-10k.h5','df')
     #df = pd.read_hdf('output-wave1-DoubleTrig.h5','df')
 
     invert = True
@@ -34,7 +34,7 @@ def main():
         event -= baseline
         if invert: event *= -1
 
-        #xmin, xmax = findPulseWidth(event, 1/3)
+        xmin, xmax = findPulseWidth(event, 1/3)
 
         df.loc[i,'Baseline'] = baseline
         df.loc[i,'Integral'] = integrate(event,xmin,xmax,conv)
@@ -45,13 +45,17 @@ def main():
     xmin, xmax = findPulseWidth(event, 1/3)
     xdata = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
     event_r = event[xmin:xmax]
+    from scipy.integrate import simps
+    integral = simps(event_r, xdata)
+    print(integral)
+    print(df.loc[0,'Integral'])
     popt, pcov = curve_fit(Gaus, xdata, event_r, p0=(1000.,500.,50.))
-    print (popt)
-    print (pcov)
+    #print (popt)
+    #print (pcov)
 
     popt_WithC, pcov_WithC = curve_fit(GausWithConstant, xdata, event_r, p0=(popt[0],popt[1],popt[2],0.))
-    print (popt_WithC)
-    print (pcov_WithC)
+    #print (popt_WithC)
+    #print (pcov_WithC)
 
     fig, axes = plt.subplots(2,2)
     for i in range(5):
@@ -60,6 +64,7 @@ def main():
     axes[0,1].hist( df['Mean'], bins=50 )
 
     axes[1,0].plot( xdata, event_r, 'ko' )
+    #axes[1,0].plot( np.arange(event.size) ,event)
     x_plot = np.linspace(xmin,xmax,200)
     axes[1,0].plot( x_plot, Gaus( x_plot, A=popt[0], mean=popt[1], sigma=popt[2] ), 'r' )
     axes[1,0].plot( x_plot, GausWithConstant( x_plot, A=popt_WithC[0], mean=popt_WithC[1], sigma=popt_WithC[2], C=popt_WithC[3] ), 'b' )
@@ -84,7 +89,8 @@ def findPulseWidth(event, threshold):
     if secondThreshold == None:
         secondThreshold = XMAX
 
-    return (firstThreshold - 10, secondThreshold + 10)
+    #assimetrico por causa do formato do pico ter maior tempo de queda que de subida
+    return (firstThreshold - 10, secondThreshold + 150)
 
 def bisearchLeft(array, value):
     x = int(len(array) / 2)
