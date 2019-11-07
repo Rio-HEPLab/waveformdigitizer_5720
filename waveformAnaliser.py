@@ -1,5 +1,6 @@
 #!/bin/env/python
 
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,10 +12,12 @@ XMIN = 450
 XMAX = 550
 
 def main():
-    df = pd.read_hdf('output.h5','df')
-    #df = pd.read_hdf('output-wave1-SingleTrig-V2-10k.h5','df')
-    #df = pd.read_hdf('output-wave1-DoubleTrig.h5','df')
-
+    parser = argparse.ArgumentParser(description = 'Programa que recebe waveforms e extrai suas informações')
+    parser.add_argument('-df', action = 'store', dest = 'waveforms', required = True, help = 'Arquivo waveform do pandas' )
+    arguments = parser.parse_args()
+    
+    df = pd.read_hdf(arguments.waveforms,'df')
+    
     invert = True
     xmin=400
     xmax=600
@@ -69,6 +72,9 @@ def findPulseWidth(event, threshold):
     return (firstThreshold - 10, secondThreshold + 150)
 
 def bisearchLeft(array, value):
+    if (len(array) <= 0 or array == None):
+        return None
+
     x = int(len(array) / 2)
 
     if array[x][1] > value and array[x - 1][1] < value:
@@ -79,6 +85,9 @@ def bisearchLeft(array, value):
         return bisearchLeft(array[x : len(array)], value)
 
 def bisearchRight(array, value):
+    if (len(array) <= 0 or array == None):
+        return None    
+
     x = int(len(array) / 2)
 
     if array[x][1] < value and array[x - 1][1] > value:
@@ -89,6 +98,9 @@ def bisearchRight(array, value):
         return bisearchRight(array[0 : x], value)
 
 def integrate(event, xmin, xmax, conv=1.0):
+    if (xmin <= 0 or xmin == None or xmax <= 0 or xmax == None or xmax - xmin < 3):
+        return 0    
+
     event_r = event[xmin:xmax]
     xdata = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
     return simps(event_r, xdata)

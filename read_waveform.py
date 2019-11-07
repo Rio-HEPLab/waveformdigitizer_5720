@@ -7,7 +7,7 @@ import pandas as pd
 
 def main():
     
-    filename = "wave0.txt"
+    filename = "wave-06-11-2019.txt"
     maxEvents = 10000
 
     #for arg in sys.argv[1:]:
