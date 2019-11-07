@@ -48,9 +48,9 @@ def main():
     print(df['Integral'])
 
     #axes[0].hist( df['Mean'], bins=50 )
-    plt.hist( df['Integral'], bins=200, range=(0,10000) )
+    plt.hist( df['Integral'], bins=200 )
 
-    plt.show()
+    plt.show(block = True)
 
 def findPulseWidth(event, threshold):
     if (threshold > 1):
