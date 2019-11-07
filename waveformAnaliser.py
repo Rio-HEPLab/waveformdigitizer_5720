@@ -43,10 +43,12 @@ def main():
         df.loc[i,'Mean']  = mean(event,xmin,xmax,conv)
         df.loc[i,'Max']  = GetMax(event)
 
-    fig, axes = plt.subplots(2)
+    #fig, axes = plt.subplots(2)
+    
+    print(df['Integral'])
 
-    axes[0].hist( df['Mean'], bins=50 )
-    axes[1].hist( df['Integral'], bins=200, range=(0,10000) )
+    #axes[0].hist( df['Mean'], bins=50 )
+    plt.hist( df['Integral'], bins=200, range=(0,10000) )
 
     plt.show()
 
@@ -71,8 +73,9 @@ def findPulseWidth(event, threshold):
     #assimetrico por causa do formato do pico ter maior tempo de queda que de subida
     return (firstThreshold - 10, secondThreshold + 150)
 
-def bisearchLeft(array, value):
-    if (len(array) <= 0 or array == None):
+def bisearchLeft(array, value, it = 0):
+    it += 1
+    if (len(array) <= 0 or array == None or it > 100):
         return None
 
     x = int(len(array) / 2)
@@ -80,22 +83,23 @@ def bisearchLeft(array, value):
     if array[x][1] > value and array[x - 1][1] < value:
         return array[x][0]
     elif array[x][1] > value :
-        return bisearchLeft(array[0 : x], value)
+        return bisearchLeft(array[0 : x], value, it)
     elif array[x][1] < value :
-        return bisearchLeft(array[x : len(array)], value)
+        return bisearchLeft(array[x : len(array)], value, it)
 
-def bisearchRight(array, value):
-    if (len(array) <= 0 or array == None):
-        return None    
+def bisearchRight(array, value, it = 0):
+    it += 1
+    if (len(array) <= 0 or array == None or it > 100):
+        return 0    
 
     x = int(len(array) / 2)
 
     if array[x][1] < value and array[x - 1][1] > value:
         return array[x][0]
     elif array[x][1] > value :
-        return bisearchRight(array[x : len(array)], value)
+        return bisearchRight(array[x : len(array)], value, it)
     elif array[x][1] < value :
-        return bisearchRight(array[0 : x], value)
+        return bisearchRight(array[0 : x], value, it)
 
 def integrate(event, xmin, xmax, conv=1.0):
     if (xmin <= 0 or xmin == None or xmax <= 0 or xmax == None or xmax - xmin < 3):
