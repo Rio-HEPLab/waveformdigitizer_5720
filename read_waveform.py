@@ -27,9 +27,6 @@ def main():
     print("Number of events {:d}".format(maxEvents))
     print("Reading File " + filename)
 
-    #waves = open("wave0.txt", "r") 
-    #waves = open("wave1-SingleTrig.txt", "r") 
-    #waves = open("wave1-DoubleTrig.txt", "r") 
     waves = open(filename, "r") 
     record_length = -1
     event_number = -1
