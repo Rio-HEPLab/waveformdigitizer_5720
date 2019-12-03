@@ -1,3 +1,5 @@
+import argparse
+import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -5,6 +7,14 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import scipy.integrate as integrate
 from scipy.special import erfc
+
+class Event():
+	def __init__(self, _integral, _threshold, _func, _x_data_range, _event_range):
+		self.integral = _integral
+		self.threshold = _threshold
+		self.get = _func
+		self.x_data_range = _x_data_range
+		self.event_range = _event_range
 
 def baseline(vals, n_low, n_high):
     vals_low = vals[:n_low]
@@ -24,10 +34,7 @@ def model_exp_gaus_res(x, *pars):
 
     return val
 
-def model_exp_RC_res(self, x, *pars):
-
-    if (len(pars) < 6):
-        return None
+def model_exp_RC_res(x, *pars):
 
     C = pars[0]
     t0 = pars[1]
@@ -54,21 +61,17 @@ def fit_function(func_, p0_, bounds_, x_data, y_data):
 
     return ( popt, pcov )
 
-def fit_event(event, debug=True, i_xmin=400, i_xmax=800):
+def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
     event_cpy = event.copy()
 
     val_baseline = baseline(event_cpy, 200, 200)
     if debug:
-        print ( "Baseline: {:.2f}".format( val_baseline ) )
-        print ( "\n" )
+        logging.debug ( "Baseline: {:.2f}".format( val_baseline ) )
 
     invert = True
     if invert:
         event_cpy -= val_baseline
         event_cpy *= -1
-
-    #i_xmin=400
-    #i_xmax=800
 
     x_data_range = np.arange(i_xmin,i_xmax)*4.
 
@@ -76,18 +79,17 @@ def fit_event(event, debug=True, i_xmin=400, i_xmax=800):
     x_max = x_data_range[-1]
 
     if debug:
-        print (x_min, x_max)
-        print ( "\n" )
+        logging.debug ("x_min e x_max: {:.2f} {:.2f}".format(x_min, x_max))
 
     event_range = event_cpy[i_xmin:i_xmax]
 
     event_range[ (event_range < 0) ] = 0
 
     if debug:
-        print ( event_range )
-        print ( "\n" )
-        print ( np.sqrt(event_range) )
-        print ( "\n" )
+        logging.debug ( "event_range")
+        logging.debug (event_range)
+        logging.debug ( "square of event_range:")
+        logging.debug ( np.sqrt(event_range))
 
     p0_def_exp_gaus_res = (0., 1950., 20., 10000., 250.)
 
@@ -95,20 +97,17 @@ def fit_event(event, debug=True, i_xmin=400, i_xmax=800):
                             ( np.inf, np.inf, np.inf, np.inf, np.inf) )
 
     if debug:
-        print( p0_def_exp_gaus_res, bounds_exp_gaus_res )
-        print ( "\n" )
+        logging.debug("p0 : {0}\n bounds: {1} ".format( p0_def_exp_gaus_res, bounds_exp_gaus_res) )
 
     try:
         popt_0, pcov_0 = fit_function(model_exp_gaus_res, p0_def_exp_gaus_res, bounds_exp_gaus_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
-        print( err )
-        print ( "\n" )
+        logging.error( err )
         popt_0 = np.zeros(5)
         pcov_0 = np.zeros((5,5))
 
     if debug:
-        print( popt_0, pcov_0 )
-        print ( "\n" )
+        logging.debug("pop_t0: {0}\n pcov_0: {1}".format(popt_0, pcov_0) )
 
     if (popt_0 == np.zeros(5)).all() == True:
         return (None, None, None, None, None, None, x_data_range, event_range)
@@ -119,20 +118,17 @@ def fit_event(event, debug=True, i_xmin=400, i_xmax=800):
                           ( np.inf, np.inf, np.inf, np.inf, np.inf, 1., np.inf) )
 
     if debug:
-        print ( p0_exp_RC_res, bounds_exp_RC_res )
-        print ( "\n" )
+        logging.debug ("p0_exp_RC_res: {0}\n bounds_exp_RC_res: {1}".format(p0_exp_RC_res, bounds_exp_RC_res) )
 
     try:
         popt_1, pcov_1 = fit_function(model_exp_RC_res, p0_exp_RC_res, bounds_exp_RC_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
-        print( err )
-        print ( "\n" )
+        logging.error( err )
         popt_1 = np.zeros(7)
         pcov_1 = np.zeros((7,7))
 
     if debug:
-        print( popt_1, pcov_1 )
-        print ( "\n" )
+        logging.debug("popt_1: {0}\n pcov_1: {1}".format( popt_1, pcov_1 ))
 
     if (popt_1 == np.zeros(7)).all() == True:
         return (None, None, None, None, None, None, x_data_range, event_range)
@@ -151,42 +147,54 @@ def fit_event(event, debug=True, i_xmin=400, i_xmax=800):
 
     func_1_full = lambda x: model_exp_RC_res(x, *popt_1)
 
-    if debug:
-        plt.figure(figsize=(10,5))
-        plt.plot( x_data_range, event_range, 'ko' )
-        #plt.plot( x_data_range, model_exp_gaus_res(x_data_range, *popt) )
-        plt.plot( x_data_lin, func_0_full(x_data_lin) )
-        plt.plot( x_data_lin, func_1_full(x_data_lin) )
-        plt.plot( x_data_lin, func_0(x_data_lin) )
-        plt.plot( x_data_lin, func_1(x_data_lin) )
-
     chi2 = np.sum( ( event_range - func_1_full(x_data_range) )**2 ) / len(event_range)
     if debug:
-        print (chi2)
-        print ( "\n" )
+        logging.debug("chi2: {:.2f}".format(chi2))
 
     integral_result = integrate.quad( func_1, x_min, x_max )
     if debug:
-        print (integral_result)
-        print ( "\n" )
+        logging.debug ("integral: {0}".format(integral_result))
 
     threshold = 30.
     x_threshold_binned = -1.
     x_sel_binned = x_data_range[event_range > threshold]
     if x_sel_binned.size > 0: x_threshold_binned = x_sel_binned[0]
     if debug:
-        print (x_threshold_binned)
-        print ( "\n" )
+        logging.debug ("treshold {0}".format(x_threshold_binned))
 
     x_threshold_func = -1.
     x_sel_func = x_data_lin[func_1(x_data_lin) > threshold]
     if x_sel_func.size > 0: x_threshold_func = x_sel_func[0]
     if debug:
-        print (x_threshold_func)
-        print ( "\n" )
+        logging.debug ("treshold_func: {0}".format(x_threshold_func))
 
-    #return (chi2, integral_result, x_threshold_binned, x_threshold_func, popt_1, pcov_1)
-    return (chi2, integral_result, x_threshold_binned, x_threshold_func, popt_1, pcov_1, x_data_range, event_range)
+    return Event(integral_result, x_threshold_binned, func_1_full, x_data_range, event_range)
+
+def main():
+	
+    parser = argparse.ArgumentParser(description = 'Programa que recebe waveforms e extrai suas informações')
+    parser.add_argument('-df', action = 'store', dest = 'waveforms', required = True, help = 'Arquivo waveform do pandas' )
+    arguments = parser.parse_args()
+    
+    logging.basicConfig(level=logging.DEBUG, filename='app.log', filemode='w')
+    
+    df = pd.read_hdf(arguments.waveforms,'df')
+
+    i_evt = 84
+    event = df.loc[i_evt,'Vals']
+
+    result = fit_event(event, True)
+
+	
+    plt.figure(figsize=(10,5))
+    plt.plot( result.x_data_range, result.event_range, 'ko' )
+    plt.plot( result.x_data_range, result.get(result.x_data_range) )
+    plt.show()
+
+    return
+
+if __name__ == '__main__':
+    main()
 
 df = pd.read_hdf("../output.h5",'df')
 
