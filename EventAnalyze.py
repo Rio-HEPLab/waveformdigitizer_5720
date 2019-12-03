@@ -1,5 +1,8 @@
 import argparse
 import logging
+logger = logging.getLogger("EventAnalyze")
+logger.setLevel(logging.DEBUG)
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -131,7 +134,8 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
         logger.debug("popt_1: {0}\n pcov_1: {1}".format( popt_1, pcov_1 ))
 
     if (popt_1 == np.zeros(7)).all() == True:
-        return (None, None, None, None, None, None, x_data_range, event_range)
+        #return (None, None, None, None, None, None, x_data_range, event_range)
+        return None
 
     x_data_lin = np.linspace(x_min,x_max,1000)
 
@@ -168,9 +172,7 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
     if debug:
         logger.debug ("treshold_func: {0}".format(x_threshold_func))
 
-    return Event(integral_result, x_threshold_binned, func_1_full, x_data_range, event_range)
-
-logger = logging.getLogger("EventAnalyze")
+    return Event(integral_result, x_threshold_func, func_1_full, x_data_range, event_range)
 
 def main():
 	
@@ -180,7 +182,6 @@ def main():
     arguments = parser.parse_args()
     
     logging.basicConfig(filename='EventAnalyze.log', filemode='w')
-    logger.setLevel(logging.DEBUG)
     df = pd.read_hdf(arguments.waveforms,'df')
 
     i_evt = 84
