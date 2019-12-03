@@ -66,7 +66,7 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
 
     val_baseline = baseline(event_cpy, 200, 200)
     if debug:
-        logging.debug ( "Baseline: {:.2f}".format( val_baseline ) )
+        logger.debug ( "Baseline: {:.2f}".format( val_baseline ) )
 
     invert = True
     if invert:
@@ -79,17 +79,17 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
     x_max = x_data_range[-1]
 
     if debug:
-        logging.debug ("x_min e x_max: {:.2f} {:.2f}".format(x_min, x_max))
+        logger.debug ("x_min e x_max: {:.2f} {:.2f}".format(x_min, x_max))
 
     event_range = event_cpy[i_xmin:i_xmax]
 
     event_range[ (event_range < 0) ] = 0
 
     if debug:
-        logging.debug ( "event_range")
-        logging.debug (event_range)
-        logging.debug ( "square of event_range:")
-        logging.debug ( np.sqrt(event_range))
+        logger.debug ( "event_range")
+        logger.debug (event_range)
+        logger.debug ( "square of event_range:")
+        logger.debug ( np.sqrt(event_range))
 
     p0_def_exp_gaus_res = (0., 1950., 20., 10000., 250.)
 
@@ -97,17 +97,17 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
                             ( np.inf, np.inf, np.inf, np.inf, np.inf) )
 
     if debug:
-        logging.debug("p0 : {0}\n bounds: {1} ".format( p0_def_exp_gaus_res, bounds_exp_gaus_res) )
+        logger.debug("p0 : {0}\n bounds: {1} ".format( p0_def_exp_gaus_res, bounds_exp_gaus_res) )
 
     try:
         popt_0, pcov_0 = fit_function(model_exp_gaus_res, p0_def_exp_gaus_res, bounds_exp_gaus_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
-        logging.error( err )
+        logger.error( err )
         popt_0 = np.zeros(5)
         pcov_0 = np.zeros((5,5))
 
     if debug:
-        logging.debug("pop_t0: {0}\n pcov_0: {1}".format(popt_0, pcov_0) )
+        logger.debug("pop_t0: {0}\n pcov_0: {1}".format(popt_0, pcov_0) )
 
     if (popt_0 == np.zeros(5)).all() == True:
         return (None, None, None, None, None, None, x_data_range, event_range)
@@ -118,17 +118,17 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
                           ( np.inf, np.inf, np.inf, np.inf, np.inf, 1., np.inf) )
 
     if debug:
-        logging.debug ("p0_exp_RC_res: {0}\n bounds_exp_RC_res: {1}".format(p0_exp_RC_res, bounds_exp_RC_res) )
+        logger.debug ("p0_exp_RC_res: {0}\n bounds_exp_RC_res: {1}".format(p0_exp_RC_res, bounds_exp_RC_res) )
 
     try:
         popt_1, pcov_1 = fit_function(model_exp_RC_res, p0_exp_RC_res, bounds_exp_RC_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
-        logging.error( err )
+        logger.error( err )
         popt_1 = np.zeros(7)
         pcov_1 = np.zeros((7,7))
 
     if debug:
-        logging.debug("popt_1: {0}\n pcov_1: {1}".format( popt_1, pcov_1 ))
+        logger.debug("popt_1: {0}\n pcov_1: {1}".format( popt_1, pcov_1 ))
 
     if (popt_1 == np.zeros(7)).all() == True:
         return (None, None, None, None, None, None, x_data_range, event_range)
@@ -149,43 +149,45 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
 
     chi2 = np.sum( ( event_range - func_1_full(x_data_range) )**2 ) / len(event_range)
     if debug:
-        logging.debug("chi2: {:.2f}".format(chi2))
+        logger.debug("chi2: {:.2f}".format(chi2))
 
     integral_result = integrate.quad( func_1, x_min, x_max )
     if debug:
-        logging.debug ("integral: {0}".format(integral_result))
+        logger.debug ("integral: {0}".format(integral_result))
 
     threshold = 30.
     x_threshold_binned = -1.
     x_sel_binned = x_data_range[event_range > threshold]
     if x_sel_binned.size > 0: x_threshold_binned = x_sel_binned[0]
     if debug:
-        logging.debug ("treshold {0}".format(x_threshold_binned))
+        logger.debug ("treshold {0}".format(x_threshold_binned))
 
     x_threshold_func = -1.
     x_sel_func = x_data_lin[func_1(x_data_lin) > threshold]
     if x_sel_func.size > 0: x_threshold_func = x_sel_func[0]
     if debug:
-        logging.debug ("treshold_func: {0}".format(x_threshold_func))
+        logger.debug ("treshold_func: {0}".format(x_threshold_func))
 
     return Event(integral_result, x_threshold_binned, func_1_full, x_data_range, event_range)
+
+logger = logging.getLogger("EventAnalyze")
 
 def main():
 	
     parser = argparse.ArgumentParser(description = 'Programa que recebe waveforms e extrai suas informações')
     parser.add_argument('-df', action = 'store', dest = 'waveforms', required = True, help = 'Arquivo waveform do pandas' )
+    parser.add_argument('-b', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
     arguments = parser.parse_args()
     
-    logging.basicConfig(level=logging.DEBUG, filename='app.log', filemode='w')
-    
+    logging.basicConfig(filename='EventAnalyze.log', filemode='w')
+    logger.setLevel(logging.DEBUG)
     df = pd.read_hdf(arguments.waveforms,'df')
 
     i_evt = 84
     event = df.loc[i_evt,'Vals']
 
-    result = fit_event(event, True)
+    result = fit_event(event, arguments.debug)
 
-	
     plt.figure(figsize=(10,5))
     plt.plot( result.x_data_range, result.event_range, 'ko' )
     plt.plot( result.x_data_range, result.get(result.x_data_range) )
