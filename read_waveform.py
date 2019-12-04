@@ -7,7 +7,7 @@ import pandas as pd
 
 def main():
     
-    filename = "wave-06-11-2019.txt"
+    filename = "doubleChannel.txt"
     maxEvents = 10000
 
     #for arg in sys.argv[1:]:
@@ -31,10 +31,12 @@ def main():
     record_length = -1
     event_number = -1
     offset = -1
-    arr = None
+    arr = []
+    channel = -1
     p_record_length = re.compile('Record Length: *')
     p_event_number = re.compile('Event Number: *')
     p_offset = re.compile("DC offset \\(DAC\\): *")
+    p_channel = re.compile('Channel:*')
 
     df = pd.DataFrame(columns=['Rec','Evt','DAC','Vals'])
 
@@ -43,7 +45,8 @@ def main():
 	 
         m_record_length = p_record_length.match( line ) 
         m_event_number = p_event_number.match( line ) 
-        m_offset = p_offset.match( line ) 
+        m_offset = p_offset.match( line )
+        m_channel = p_channel.match( line )
 	 
         if m_record_length: 
             record_length = int( line[m_record_length.end():] )  
@@ -57,18 +60,22 @@ def main():
             offset = int( line[m_offset.end():], 0 ) 
             print (line, offset) 
             start_array = True 
+        elif m_channel:
+            channel = int(line[m_channel.end():])
+            print(line, channel)
         else:     
             if start_array: 
                 if arr_entry == -1: 
-                    arr = np.zeros( record_length ) 
+                    arr.append(np.zeros( record_length ))
                     arr_entry = 0 
 
                 val = int( line.rstrip() ) 
-                arr[arr_entry] = val 
+                arr[channel][arr_entry] = val 
                 arr_entry += 1 
-                if arr_entry == (record_length):  
-                    print (arr) 
+                if arr_entry == (record_length) and channel > 0:  
+                    print (arr)
                     df = df.append({'Rec' : record_length, 'Evt' : event_number, 'DAC' : offset, 'Vals': arr}, ignore_index=True) 
+                    arr = None
 
     #df.to_csv('output.csv')
     #df.to_hdf('output.h5', key='df', mode='w')

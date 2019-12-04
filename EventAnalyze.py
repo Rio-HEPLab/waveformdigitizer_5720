@@ -175,23 +175,28 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
     return Event(integral_result, x_threshold_func, func_1_full, x_data_range, event_range)
 
 def main():
-	
+
     parser = argparse.ArgumentParser(description = 'Programa que recebe waveforms e extrai suas informações')
     parser.add_argument('-df', action = 'store', dest = 'waveforms', required = True, help = 'Arquivo waveform do pandas' )
     parser.add_argument('-b', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
     arguments = parser.parse_args()
-    
+
     logging.basicConfig(filename='EventAnalyze.log', filemode='w')
     df = pd.read_hdf(arguments.waveforms,'df')
 
-    i_evt = 84
-    event = df.loc[i_evt,'Vals']
+    event = df.loc[0,'Vals']
 
-    result = fit_event(event, arguments.debug)
+    fig, axes = plt.subplots(2)
 
-    plt.figure(figsize=(10,5))
-    plt.plot( result.x_data_range, result.event_range, 'ko' )
-    plt.plot( result.x_data_range, result.get(result.x_data_range) )
+    result = fit_event(event[0], arguments.debug)
+
+    axes[0].plot( result.x_data_range, result.event_range, 'ko' )
+    axes[0].plot( result.x_data_range, result.get(result.x_data_range) )
+
+    result = fit_event(event[1], arguments.debug)
+
+    axes[1].plot( result.x_data_range, result.event_range, 'ko' )
+    axes[1].plot( result.x_data_range, result.get(result.x_data_range) )
     plt.show()
 
     return
