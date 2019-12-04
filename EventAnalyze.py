@@ -113,7 +113,8 @@ def fit_event(event, debug=False, i_xmin=400, i_xmax=800):
         logger.debug("pop_t0: {0}\n pcov_0: {1}".format(popt_0, pcov_0) )
 
     if (popt_0 == np.zeros(5)).all() == True:
-        return (None, None, None, None, None, None, x_data_range, event_range)
+        #return (None, None, None, None, None, None, x_data_range, event_range)
+        return None
 
     p0_exp_RC_res = list(popt_0[0:4]) + [20.,0.50] + [ popt_0[4] ]
 
