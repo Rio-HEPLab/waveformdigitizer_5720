@@ -4,7 +4,7 @@ logger = logging.getLogger("EventAnalyze")
 logger.setLevel(logging.DEBUG)
 
 import numpy as np
-import pandas as pd
+import h5py
 import matplotlib.pyplot as plt
 
 from scipy.optimize import curve_fit
@@ -182,24 +182,25 @@ def main():
     arguments = parser.parse_args()
 
     logging.basicConfig(filename='EventAnalyze.log', filemode='w')
-    df = pd.read_hdf(arguments.waveforms,'df')
+    with h5py.File(arguments.waveforms,'r') as f:
 
-    event = df.loc[0,'Vals']
+        events = f['Vals']
+        event = events[0]
 
-    fig, axes = plt.subplots(2)
-
-    result = fit_event(event[0], arguments.debug)
-
-    axes[0].plot( result.x_data_range, result.event_range, 'ko' )
-    axes[0].plot( result.x_data_range, result.get(result.x_data_range) )
-
-    result = fit_event(event[1], arguments.debug)
-
-    axes[1].plot( result.x_data_range, result.event_range, 'ko' )
-    axes[1].plot( result.x_data_range, result.get(result.x_data_range) )
-    plt.show()
-
-    return
+        fig, axes = plt.subplots(2)
+ 
+        result = fit_event(event[0], arguments.debug)
+ 
+        axes[0].plot( result.x_data_range, result.event_range, 'ko' )
+        axes[0].plot( result.x_data_range, result.get(result.x_data_range) )
+ 
+        result = fit_event(event[1], arguments.debug)
+ 
+        axes[1].plot( result.x_data_range, result.event_range, 'ko' )
+        axes[1].plot( result.x_data_range, result.get(result.x_data_range) )
+        plt.show()
+ 
+        return
 
 if __name__ == '__main__':
     main()
