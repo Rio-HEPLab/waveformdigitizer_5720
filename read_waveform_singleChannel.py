@@ -7,8 +7,7 @@ import h5py
 
 def main():
 
-    maxEvents = 10000
-
+    #maxEvents = 10000
     #for arg in sys.argv[1:]:
     #    if isinstance(arg, str):
     #        print("Reading File " + arg)
@@ -18,18 +17,21 @@ def main():
     #        maxEvents = arg
 
     parser = argparse.ArgumentParser(description = 'Converte saida do Wavedump para hdf5')
-    parser.add_argument('-f', action = 'store', dest = 'txt', required = True, help = 'Saida do Wavedump' )
-    parser.add_argument('-b', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
-    arguments = parser.parse_args()
+    parser.add_argument('fileName', help = 'Arquivo de entrada' )
+    parser.add_argument('-n', '--events', dest = 'events', type = int, required = False, default = 10000, help = 'Numero de eventos' )
+    #parser.add_argument('-f', action = 'store', dest = 'txt', required = True, help = 'Saida do Wavedump' )
+    parser.add_argument('-v', '--verbose', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
+    args = parser.parse_args()
 
-    filename = arguments.txt
-    print("Number of events {:d}".format(maxEvents))
-    print("Reading File " + filename)
+    fileName = args.fileName
+    events = args.events
+    print( "Number of events {:d}".format( events ) )
+    print( "Reading File " + fileName )
 
-    file_str = ( filename.split('/')[-1] ).split('.')[0]
+    file_str = ( fileName.split('/')[-1] ).split('.')[0]
     with h5py.File('output-' + file_str + '.h5', 'w') as f:
 
-        waves = open(filename, "r")
+        waves = open(fileName, "r")
         record_length = -1
         event_number = -1
         offset = -1
@@ -42,7 +44,7 @@ def main():
 
         i = 0
         for idx, line in enumerate(waves):
-            if maxEvents >= 0 and i >= maxEvents: break
+            if events >= 0 and i >= events: break
 
             m_record_length = p_record_length.match( line )
             m_event_number = p_event_number.match( line )

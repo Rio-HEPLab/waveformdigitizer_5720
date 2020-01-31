@@ -4,11 +4,11 @@ import sys
 import re
 import numpy as np
 import h5py
+import argparse
 
 def main():
 
-    maxEvents = 10000
-
+    #maxEvents = 10000
     #for arg in sys.argv[1:]:
     #    if isinstance(arg, str):
     #        print("Reading File " + arg)
@@ -18,17 +18,24 @@ def main():
     #        maxEvents = arg
 
     parser = argparse.ArgumentParser(description = 'Converte saida do Wavedump para hdf5')
-    parser.add_argument('-f', action = 'store', dest = 'txt', required = True, help = 'Saida do Wavedump' )
-    parser.add_argument('-b', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
-    arguments = parser.parse_args()
+    parser.add_argument('fileName', help = 'Arquivo de entrada' )
+    parser.add_argument('-n', '--events', dest = 'events', type = int, required = False, default = 10000, help = 'Numero de eventos' )
+    #parser.add_argument('-f', action = 'store', dest = 'txt', required = True, help = 'Saida do Wavedump' )
+    parser.add_argument('-v', '--verbose', action = 'store_true', dest = 'debug', required = False, help = 'Flag de debug' )
+    args = parser.parse_args()
 
-    print("Number of events {:d}".format(maxEvents))
-    print("Reading File " + filename)
+    fileName = args.fileName
+    events = args.events
+    print( "Number of events {:d}".format( events ) )
+    print( "Reading File " + fileName )
 
-    file_str = ( filename.split('/')[-1] ).split('.')[0]
+    dsetMax = 1000
+    file_str = ( fileName.split('/')[-1] ).split('.')[0]
     with h5py.File('output-' + file_str + '.h5', 'w') as f:
 
-        waves = open(filename, "r")
+        dset = f.create_dataset('Vals', (dsetMax,1024), compression="gzip", chunks=True, maxshape=(None,1024))
+        
+        waves = open(fileName, "r")
         record_length = -1
         event_number = -1
         offset = -1
@@ -39,10 +46,14 @@ def main():
         p_offset = re.compile("DC offset \\(DAC\\): *")
         p_channel = re.compile('Channel:*')
 
-        data = []
-
+        #data = []
+        dset_slice = 0
+        dset_idx = 0
+        n_events_recorded = 0
+        print ( dset.shape )
         for idx, line in enumerate(waves):
-            if maxEvents >= 0 and len(data) >= maxEvents: break
+            #if events >= 0 and len(data) >= events: break
+            if events >= 0 and n_events_recorded >= events: break
 
             m_record_length = p_record_length.match( line )
             m_event_number = p_event_number.match( line )
@@ -67,18 +78,35 @@ def main():
             else:
                 if start_array:
                     if arr_entry == -1:
-                        arr.append(np.zeros( record_length ))
+                        #arr.append(np.zeros( record_length ))
+                        arr = np.zeros( record_length )
                         arr_entry = 0
 
                     val = int( line.rstrip() )
-                    arr[channel][arr_entry] = val
+                    #arr[channel][arr_entry] = val
+                    arr[arr_entry] = val
                     arr_entry += 1
-                    if arr_entry == (record_length) and channel > 0:
+                    #if arr_entry == (record_length) and channel > 0:
+                    if arr_entry == (record_length):
                         print (arr)
-                        data.append(arr)
+                        #data.append(arr)
+                        if dset_idx == dsetMax:
+                            dset_slice += 1
+                            dset_idx = 0
+                            dset.resize( ( dset.shape[0] + dsetMax ), axis=0 )
+                            print ( dset.shape )
+
+                        dset[ ( dset_slice*dsetMax + dset_idx ) ] = arr
+                        dset_idx += 1
+                        n_events_recorded += 1
+                        print ( "Number of events recorded: {:d}".format( n_events_recorded ) )
+
                         arr = None
 
-        dset = f.create_dataset('Vals', data=data)
+        #dset = f.create_dataset('Vals', data=data)
+        dset.resize( n_events_recorded, axis=0 )
+        print ( dset.shape )
+        print ( "Number of events recorded: {:d}".format( n_events_recorded ) )
 
 if __name__== '__main__':
     main()
