@@ -136,6 +136,7 @@ def main():
     parser = argparse.ArgumentParser(description = 'Programa que recebe waveforms e extrai suas informações')
     #parser.add_argument('-df', action = 'store', dest = 'waveforms', required = True, help = 'Arquivo waveform do pandas' )
     parser.add_argument('--h5', action = 'store', dest = 'h5_file', required = True, help = 'Arquivo waveforms.' )
+    parser.add_argument('-n', '--events', dest = 'events', type = int, required = False, default = 10000, help = 'Numero de eventos' )
     args = parser.parse_args()
 
     df_out = pd.DataFrame(columns=['Baseline','Integral','Mean','Max'])
@@ -144,7 +145,8 @@ def main():
     with h5py.File( args.h5_file, 'r') as f:
 
         dset = f['Vals']
-
+        print ( "Number of events: {:d}".format( dset.shape[0] ) )
+  
         invert = True
         xmin=400
         xmax=600
@@ -158,9 +160,11 @@ def main():
         #df['Max'] = 0
         #for i in range( df.shape[0] ):
         for i_evt in range( dset.shape[0] ):
+            if args.events >= 0 and i_evt >= args.events: break
+
             #event = df.loc[i,'Vals']
             event = dset[i_evt].copy()
-            print ( "Event {:d}.format( i_evt)" )
+            print ( "Event {:d}".format( i_evt) )
             print ( event )   
  
             baseline = GetBaseLine(event, 200)
@@ -186,10 +190,10 @@ def main():
     
         #fig, axes = plt.subplots(2)
     
-        print(df['Integral'])
+        print(df_out['Integral'])
     
         #axes[0].hist( df['Mean'], bins=50 )
-        plt.hist( df['Integral'], bins=200 )
+        plt.hist( df_out['Integral'], bins=200 )
     
         plt.show(block = True)
 
