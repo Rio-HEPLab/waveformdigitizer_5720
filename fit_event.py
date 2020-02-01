@@ -1,5 +1,6 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import scipy.integrate as integrate
 from scipy.special import erfc
@@ -41,11 +42,12 @@ class ModelExpRCRes:
 
 def fit_function(func_, p0_, bounds_, x_data, y_data):
     
-    popt, pcov = curve_fit( func_, x_data, y_data, p0=p0_, bounds=bounds_ )
+    max_nfev_ = 1000 * x_data.size
+    popt, pcov = curve_fit( func_, x_data, y_data, p0=p0_, bounds=bounds_, max_nfev=max_nfev_ )
 
     return ( popt, pcov )
 
-def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
+def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0, threshold=30., p0_def_exp_gaus_res=(0., 1950., 20., 10000., 250.)):
     #event_cpy = event.copy()
 
     #val_baseline = baseline(event_cpy, 200, 200)
@@ -67,7 +69,8 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
     x_min = x_data_range[0]
     x_max = x_data_range[-1]
     
-    if debug: 
+    if debug:
+        print ( "X(min), X(max):" ) 
         print (x_min, x_max)
         print ( "\n" )
     
@@ -77,21 +80,24 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
     event_range[ (event_range < 0) ] = 0
     
     if debug: 
+        print ( "Waveform:" ) 
         print ( event_range )
         print ( "\n" )
         print ( np.sqrt(event_range) )
         print ( "\n" )
     
-    p0_def_exp_gaus_res = (0., 1950., 20., 10000., 250.)
+    #p0_def_exp_gaus_res = (0., 1950., 20., 10000., 250.)
     
     bounds_exp_gaus_res = ( (-np.inf,     0.,     0.,     0.,     0.),
                             ( np.inf, np.inf, np.inf, np.inf, np.inf) )
     
     if debug: 
+        print ( "Exp. + Gaus. fit initial values:" ) 
         print( p0_def_exp_gaus_res, bounds_exp_gaus_res )
         print ( "\n" )
         
     try:
+        if debug: print ( "Running Exp. + Gaus. fit." ) 
         popt_0, pcov_0 = fit_function(model_exp_gaus_res, p0_def_exp_gaus_res, bounds_exp_gaus_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
         print( err )
@@ -100,6 +106,7 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
         pcov_0 = np.zeros((5,5))
         
     if debug: 
+        print ( "Exp. + Gaus. fit results:" ) 
         print( popt_0, pcov_0 )
         print ( "\n" )
     
@@ -114,10 +121,12 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
                           ( np.inf, np.inf, np.inf, np.inf, np.inf, 1., np.inf) )
     
     if debug: 
+        print ( "Full fit initial values:" ) 
         print ( p0_exp_RC_res, bounds_exp_RC_res )
         print ( "\n" )
     
     try:
+        if debug: print ( "Running full fit." ) 
         popt_1, pcov_1 = fit_function(model_exp_RC_res, p0_exp_RC_res, bounds_exp_RC_res, x_data_range, event_range)
     except (RuntimeError, ValueError) as err:
         print( err )
@@ -126,6 +135,7 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
         pcov_1 = np.zeros((7,7))
         
     if debug: 
+        print ( "Full fit results:" ) 
         print( popt_1, pcov_1 )
         print ( "\n" )     
     
@@ -157,19 +167,22 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
         
     chi2 = np.sum( ( event_range - func_1_full(x_data_range) )**2 ) / len(event_range)
     if debug: 
+        print ( "Fit chi2:" ) 
         print (chi2)
         print ( "\n" )
         
     integral_result = integrate.quad( func_1, x_min, x_max )
     if debug: 
+        print ( "Fit integral result:" ) 
         print (integral_result)
         print ( "\n" )
     
-    threshold = 30.
+    #threshold = 30.
     x_threshold_binned = -1.
     x_sel_binned = x_data_range[event_range > threshold]
     if x_sel_binned.size > 0: x_threshold_binned = x_sel_binned[0]
     if debug: 
+        print ( "Binned LE:" ) 
         print (x_threshold_binned)
         print ( "\n" )
     
@@ -177,6 +190,7 @@ def fit_event(event_processed, debug=True, i_xmin=400, i_xmax=800, conv=1.0):
     x_sel_func = x_data_lin[func_1(x_data_lin) > threshold]
     if x_sel_func.size > 0: x_threshold_func = x_sel_func[0]
     if debug: 
+        print ( "Fit LE:" ) 
         print (x_threshold_func)
         print ( "\n" )
     

@@ -108,8 +108,8 @@ def main():
     parser.add_argument('-n', '--events', dest = 'events', type = int, required = False, default = 10000, help = 'Numero de eventos' )
     args = parser.parse_args()
 
-    fit_selected_events = False
-    show_channel = 1
+    fit_selected_events = True
+    show_channel = 0
 
     #df = pd.read_hdf(arguments.waveforms,'df')
 
@@ -167,6 +167,7 @@ def main():
 
         df = None
         if run_double_channel:
+            print ( "Merging datasets Ch0/1" )
             df = df0.merge( df1, left_on='Event', right_on='Event', suffixes=('_ch0','_ch1') )
         else:
             df = df0
@@ -234,13 +235,21 @@ def main():
                 xmin1, xmax1 = findPulseWidth(event1, 1/3)
                 print ( "X(min), X(max) (Ch1) = {:d}, {:d}".format( xmin1, xmax1 ) )    
 
-            result0 = fit_event(event0, False, 400, 800, conv)
+            #result0 = fit_event(event0, False, 400, 800, conv)
+            result0 = fit_event(event0, True, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
             chi2_fit0, integral_fit_result0, x_leading_binned0, x_leading_fit0, popt_fit0, pcov_fit0, x_data_range0, event_range0 = result0
+            print ( "Fit resuts Ch0" )
+            print ( popt_fit0 )
+            print ( pcov_fit0 ) 
 
             chi2_fit1, integral_fit_result1, x_leading_binned1, x_leading_fit1, popt_fit1, pcov_fit1, x_data_range1, event_range1 = None, None, None, None, None, None, None, None
             if run_double_channel:
-                result1 = fit_event(event1, False, 400, 800, conv)
+                #result1 = fit_event(event1, False, 400, 800, conv)
+                result1 = fit_event(event1, True, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
                 chi2_fit1, integral_fit_result1, x_leading_binned1, x_leading_fit1, popt_fit1, pcov_fit1, x_data_range1, event_range1 = result1
+                print ( "Fit resuts Ch1" )
+                print ( popt_fit1 )
+                print ( pcov_fit1 ) 
             
             if fit_selected_events:
                 axes[i_row, i_col].plot( ( x_data_range0 if show_channel == 0 else x_data_range1 ), 
