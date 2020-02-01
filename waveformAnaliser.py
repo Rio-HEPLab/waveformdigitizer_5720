@@ -108,8 +108,8 @@ def main():
     parser.add_argument('-n', '--events', dest = 'events', type = int, required = False, default = 10000, help = 'Numero de eventos' )
     args = parser.parse_args()
 
-    fit_selected_events = True
-    show_channel = 0
+    fit_selected_events = False
+    show_channel = 1
 
     #df = pd.read_hdf(arguments.waveforms,'df')
 
@@ -236,7 +236,9 @@ def main():
                 print ( "X(min), X(max) (Ch1) = {:d}, {:d}".format( xmin1, xmax1 ) )    
 
             #result0 = fit_event(event0, False, 400, 800, conv)
-            result0 = fit_event(event0, True, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
+            debug_fit = False
+            if fit_selected_events: debug_fit = True
+            result0 = fit_event(event0, debug_fit, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
             chi2_fit0, integral_fit_result0, x_leading_binned0, x_leading_fit0, popt_fit0, pcov_fit0, x_data_range0, event_range0 = result0
             print ( "Fit resuts Ch0" )
             print ( popt_fit0 )
@@ -245,7 +247,7 @@ def main():
             chi2_fit1, integral_fit_result1, x_leading_binned1, x_leading_fit1, popt_fit1, pcov_fit1, x_data_range1, event_range1 = None, None, None, None, None, None, None, None
             if run_double_channel:
                 #result1 = fit_event(event1, False, 400, 800, conv)
-                result1 = fit_event(event1, True, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
+                result1 = fit_event(event1, debug_fit, 400, 800, conv, 15., (0., 1950., 20., 20000., 250.))
                 chi2_fit1, integral_fit_result1, x_leading_binned1, x_leading_fit1, popt_fit1, pcov_fit1, x_data_range1, event_range1 = result1
                 print ( "Fit resuts Ch1" )
                 print ( popt_fit1 )
