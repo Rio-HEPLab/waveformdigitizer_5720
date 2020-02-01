@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import sys
 import re
@@ -33,9 +33,12 @@ def main():
     file_str = ( fileName.split('/')[-1] ).split('.')[0]
     with h5py.File('output-' + file_str + '.h5', 'w') as f:
 
-        dset = f.create_dataset('Vals', (dsetMax,1024), compression="gzip", chunks=True, maxshape=(None,1024))
+        # 1024 length waveform
+        dset = f.create_dataset('Waveform', (dsetMax,1024), compression="gzip", chunks=True, maxshape=(None,1024))
+        # Event number, Channel
+        dset_metadata = f.create_dataset('Metadata', (dsetMax,2), compression="gzip", chunks=True, maxshape=(None,2))
         
-        waves = open(fileName, "r")
+        waveforms = open(fileName, "r")
         record_length = -1
         event_number = -1
         offset = -1
@@ -51,7 +54,7 @@ def main():
         dset_idx = 0
         n_events_recorded = 0
         print ( dset.shape )
-        for idx, line in enumerate(waves):
+        for idx, line in enumerate(waveforms):
             #if events >= 0 and len(data) >= events: break
             if events >= 0 and n_events_recorded >= events: break
 
@@ -94,9 +97,12 @@ def main():
                             dset_slice += 1
                             dset_idx = 0
                             dset.resize( ( dset.shape[0] + dsetMax ), axis=0 )
+                            dset_metadata.resize( ( dset.shape[0] + dsetMax ), axis=0 )
                             print ( dset.shape )
+                            print ( dset_metadata.shape )
 
                         dset[ ( dset_slice*dsetMax + dset_idx ) ] = arr
+                        dset_metadata[ ( dset_slice*dsetMax + dset_idx ) ] = (event_number,channel)
                         dset_idx += 1
                         n_events_recorded += 1
                         print ( "Number of events recorded: {:d}".format( n_events_recorded ) )
@@ -105,7 +111,12 @@ def main():
 
         #dset = f.create_dataset('Vals', data=data)
         dset.resize( n_events_recorded, axis=0 )
+        dset_metadata.resize( n_events_recorded, axis=0 )
+
         print ( dset.shape )
+        print ( dset_metadata.shape )
+        print ( dset[-1] )
+        print ( dset_metadata[-1] )
         print ( "Number of events recorded: {:d}".format( n_events_recorded ) )
 
 if __name__== '__main__':
