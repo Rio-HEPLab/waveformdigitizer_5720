@@ -6,7 +6,7 @@ import pandas as pd
 import h5py
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.special import erfc
 
 import argparse
@@ -72,7 +72,7 @@ def integrate(event, xmin, xmax, conv=1.0):
 
     event_r = event[xmin:xmax]
     xdata = np.arange(xmin, (xmax if xmax < event.size else event.size) ) * conv
-    return simps(event_r, xdata)
+    return simpson(event_r, xdata)
 
 def mean(event, xmin, xmax, conv=1.0):
     xmin_corr = ( xmin if xmin >= 0 else 0 )
@@ -156,14 +156,20 @@ def main():
         df0 = pd.DataFrame( columns=('Event','Channel','Waveform') )
         df0['Event']   = dset_metadata0[:,0]
         df0['Channel'] = dset_metadata0[:,1]
-        df0['Waveform'] = dset0
+        # df0['Waveform'] = dset0
+        for i in range( dset0.shape[0] ):
+            df0[ 'Waveform' ].iloc[ i ] = dset0[ i ]
+        # df0 = df0.set_index( 'Event' )
 
         df1 = None
         if run_double_channel and dset1:
             df1 = pd.DataFrame( columns=('Event','Channel','Waveform') )
             df1['Event']   = dset_metadata1[:,0]
             df1['Channel'] = dset_metadata1[:,1]
-            df1['Waveform'] = dset1
+            # df1['Waveform'] = dset1
+            for i in range( dset1.shape[0] ):
+                df1[ 'Waveform' ].iloc[ i ] = dset1[ i ]
+            # df1 = df1.set_index( 'Event' )
 
         df = None
         if run_double_channel:
@@ -312,7 +318,7 @@ def main():
             #df.loc[i,'Mean']  = mean(event,xmin,xmax,conv)
             #df.loc[i,'Max']  = GetMax(event)
             if run_double_channel:
-                df_out = df_out.append(
+                df_out = pd.concat( [ df_out, pd.DataFrame.from_records( [
                     {'Baseline_ch0' : val_baseline0, 
                      'Integral_ch0' : integrate(event0,xmin0,xmax0,conv), 
                      'Mean_ch0' : mean(event0,xmin0,xmax0,conv), 
@@ -337,11 +343,11 @@ def main():
                      'FitTau0_ch1' : tau0_fit1, 
                      'FitTau1_ch1' : tau1_fit1, 
                      'FitA1_ch1' : a1_fit1 
-                    }, 
+                    } ] ) ], 
                     ignore_index=True 
                     ) 
             else:
-                df_out = df_out.append(
+                df_out = pd.concat( [ df_out, pd.DataFrame.from_records( [
                     {'Baseline' : val_baseline0, 
                      'Integral' : integrate(event0,xmin0,xmax0,conv), 
                      'Mean' : mean(event0,xmin0,xmax0,conv), 
@@ -354,7 +360,7 @@ def main():
                      'FitTau0' : tau0_fit0, 
                      'FitTau1' : tau1_fit0, 
                      'FitA1' : a1_fit0
-                    }, 
+                    } ] ) ], 
                     ignore_index=True 
                     ) 
 
